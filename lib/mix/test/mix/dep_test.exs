@@ -205,8 +205,8 @@ defmodule Mix.DepTest do
     with_deps(deps, fn ->
       in_fixture("deps_status", fn ->
         [dep1, dep2] = Mix.Dep.Converger.converge([])
-        assert dep1.manager == nil
-        assert dep2.manager == :rebar3
+        assert dep1.manager == :rebar3
+        assert dep2.manager == nil
       end)
     end)
   end
@@ -992,28 +992,28 @@ defmodule Mix.DepTest do
         {:other_repo, "0.1.0", path: "custom/other_repo", only: :test}
       ]
 
-      assert loaded.(deps) == [git_repo: [:test, :prod], other_repo: :test, deps_repo: :prod]
+      assert loaded.(deps) == [git_repo: [:test, :prod], deps_repo: :prod, other_repo: :test]
 
       deps = [
         {:deps_repo, "0.1.0", path: "custom/deps_repo"},
         {:other_repo, "0.1.0", path: "custom/other_repo", only: :test}
       ]
 
-      assert loaded.(deps) == [git_repo: nil, other_repo: :test, deps_repo: nil]
+      assert loaded.(deps) == [git_repo: nil, deps_repo: nil, other_repo: :test]
 
       deps = [
         {:deps_repo, "0.1.0", path: "custom/deps_repo", only: :prod},
         {:other_repo, "0.1.0", path: "custom/other_repo"}
       ]
 
-      assert loaded.(deps) == [git_repo: nil, other_repo: nil, deps_repo: :prod]
+      assert loaded.(deps) == [git_repo: nil, deps_repo: :prod, other_repo: nil]
 
       deps = [
         {:deps_repo, "0.1.0", path: "custom/deps_repo"},
         {:other_repo, "0.1.0", path: "custom/other_repo"}
       ]
 
-      assert loaded.(deps) == [git_repo: nil, other_repo: nil, deps_repo: nil]
+      assert loaded.(deps) == [git_repo: nil, deps_repo: nil, other_repo: nil]
 
       Process.put(:custom_deps_git_repo_opts, optional: true)
 
@@ -1022,7 +1022,7 @@ defmodule Mix.DepTest do
         {:other_repo, "0.1.0", path: "custom/other_repo", only: :test}
       ]
 
-      assert loaded.(deps) == [git_repo: :test, other_repo: :test, deps_repo: :prod]
+      assert loaded.(deps) == [git_repo: :test, deps_repo: :prod, other_repo: :test]
     end
 
     test "converges and diverges when only is not specified" do
@@ -1271,28 +1271,28 @@ defmodule Mix.DepTest do
         {:other_repo, "0.1.0", path: "custom/other_repo", targets: :bbb}
       ]
 
-      assert loaded.(deps) == [git_repo: [:bbb, :rpi3], other_repo: :bbb, deps_repo: :rpi3]
+      assert loaded.(deps) == [git_repo: [:bbb, :rpi3], deps_repo: :rpi3, other_repo: :bbb]
 
       deps = [
         {:deps_repo, "0.1.0", path: "custom/deps_repo"},
         {:other_repo, "0.1.0", path: "custom/other_repo", targets: :bbb}
       ]
 
-      assert loaded.(deps) == [git_repo: nil, other_repo: :bbb, deps_repo: nil]
+      assert loaded.(deps) == [git_repo: nil, deps_repo: nil, other_repo: :bbb]
 
       deps = [
         {:deps_repo, "0.1.0", path: "custom/deps_repo", targets: :rpi3},
         {:other_repo, "0.1.0", path: "custom/other_repo"}
       ]
 
-      assert loaded.(deps) == [git_repo: nil, other_repo: nil, deps_repo: :rpi3]
+      assert loaded.(deps) == [git_repo: nil, deps_repo: :rpi3, other_repo: nil]
 
       deps = [
         {:deps_repo, "0.1.0", path: "custom/deps_repo"},
         {:other_repo, "0.1.0", path: "custom/other_repo"}
       ]
 
-      assert loaded.(deps) == [git_repo: nil, other_repo: nil, deps_repo: nil]
+      assert loaded.(deps) == [git_repo: nil, deps_repo: nil, other_repo: nil]
 
       Process.put(:custom_deps_git_repo_opts, optional: true)
 
@@ -1301,7 +1301,7 @@ defmodule Mix.DepTest do
         {:other_repo, "0.1.0", path: "custom/other_repo", targets: :bbb}
       ]
 
-      assert loaded.(deps) == [git_repo: :bbb, other_repo: :bbb, deps_repo: :rpi3]
+      assert loaded.(deps) == [git_repo: :bbb, deps_repo: :rpi3, other_repo: :bbb]
     end
   end
 

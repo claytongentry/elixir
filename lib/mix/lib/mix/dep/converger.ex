@@ -12,37 +12,42 @@ defmodule Mix.Dep.Converger do
   Topologically sorts the given dependencies.
   """
   def topological_sort(deps) do
-    Enum.map(topological_sort_apps(deps), fn app ->
-      Enum.find(deps, fn %Mix.Dep{app: other_app} -> app == other_app end)
-    end)
-  end
+    graph =
+      Enum.reduce(deps, %{}, fn %Mix.Dep{app: app, deps: children} = dep, graph ->
+        if Enum.any?(children, fn %Mix.Dep{app: child} -> child === app end) do
+          Mix.raise("App #{app} lists itself as a dependency")
+        end
 
-  defp topological_sort_apps(deps) do
-    graph = :digraph.new()
-
-    try do
-      Enum.each(deps, fn %Mix.Dep{app: app} ->
-        :digraph.add_vertex(graph, app)
-      end)
-
-      Enum.each(deps, fn %Mix.Dep{app: app, deps: other_deps} ->
-        Enum.each(other_deps, fn
-          %Mix.Dep{app: ^app} ->
-            Mix.raise("App #{app} lists itself as a dependency")
-
-          %Mix.Dep{app: other_app} ->
-            :digraph.add_edge(graph, other_app, app)
+        Map.update(graph, app, {dep, children}, fn {first, previous_children} ->
+          {first, children ++ previous_children}
         end)
       end)
 
-      :digraph_utils.topsort(graph) ||
+    {_graph, sorted} = Enum.reduce(deps, {graph, []}, &visit_dep(&1, &2, []))
+    Enum.reverse(sorted)
+  end
+
+  # Pending applications hold their records and dependencies. During traversal
+  # they are marked as visiting, then removed when their dependencies are done.
+  defp visit_dep(%Mix.Dep{app: app}, {graph, sorted} = acc, path) do
+    case Map.get(graph, app) do
+      :visiting ->
+        cycle = [app | Enum.take_while(path, &(&1 != app))]
+
         Mix.raise(
           "Could not sort dependencies. " <>
             "The following dependencies form a cycle: " <>
-            Enum.join(Mix.Utils.find_cycle!(graph), ", ")
+            Enum.join(Enum.sort(cycle), ", ")
         )
-    after
-      :digraph.delete(graph)
+
+      {dep, children} ->
+        acc = {Map.put(graph, app, :visiting), sorted}
+        {graph, sorted} = Enum.reduce(children, acc, &visit_dep(&1, &2, [app | path]))
+        {Map.delete(graph, app), [dep | sorted]}
+
+      nil ->
+        # Already processed, or a dependency outside the supplied graph.
+        acc
     end
   end
 
@@ -110,7 +115,7 @@ defmodule Mix.Dep.Converger do
 
     if not diverged? and use_remote? do
       # Make sure there are no cycles before calling the remote converger
-      topological_sort_apps(deps)
+      topological_sort(deps)
 
       # If there is a lock, it means we are doing a get/update
       # and we need to hit the remote converger which do external

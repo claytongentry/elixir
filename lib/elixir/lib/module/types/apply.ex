@@ -1943,17 +1943,14 @@ defmodule Module.Types.Apply do
 
   # Check all old values together: a single unmatched fragment must not reject the update.
   defp map_update_check_callback({old_values, _descr, _errors} = result, fun, gradual?) do
-    unless empty?(old_values) do
-      arguments = [if(gradual?, do: dynamic(old_values), else: old_values)]
+    arguments = [if(gradual?, do: dynamic(old_values), else: old_values)]
 
-      case fun_apply_or_none(fun, arguments) do
-        {:ok, _result, :ok} -> :ok
-        {:ok, _result, reason} -> throw({:badapply, reason, arguments})
-        reason -> throw({:badapply, reason, arguments})
-      end
+    case fun_apply_or_none(fun, arguments) do
+      {:ok, _result, :ok} -> result
+      {:ok, _result, {:badarg, _domain, true}} -> result
+      {:ok, _result, reason} -> throw({:badapply, reason, arguments})
+      reason -> throw({:badapply, reason, arguments})
     end
-
-    result
   end
 
   defp map_update_check_callback(result, _fun, _gradual?), do: result

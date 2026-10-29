@@ -1485,6 +1485,17 @@ defmodule Module.Types.MapTest do
 
                    (:bar -> dynamic(:value))
                """
+
+      assert typeerror!(Map.update(%{}, :key, :default, fn -> :value end)) =~
+               """
+               expected a 1-arity function on function call within Map.update/4:
+
+                   Map.update(%{}, :key, :default, fn -> :value end)
+
+               but got function with arity 0:
+
+                   (-> dynamic(:value))
+               """
     end
   end
 
